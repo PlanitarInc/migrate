@@ -21,12 +21,12 @@ func (driver *Driver) FilenameExtension() string {
 	return "sh"
 }
 
-func (driver *Driver) Migrate(f file.File, pipe chan interface{}) {
+func (driver *Driver) Migrate(id string, f file.File, pipe chan interface{}) {
 	defer close(pipe)
 	pipe <- f
 	return
 }
 
-func (driver *Driver) Version() (uint64, error) {
+func (driver *Driver) Version(id string) (uint64, error) {
 	return uint64(0), nil
 }

@@ -61,7 +61,10 @@ func (driver *Driver) Close() error {
 }
 
 func (driver *Driver) ensureVersionTableExists() error {
-	_, err := driver.db.Exec("CREATE TABLE IF NOT EXISTS " + tableName + " (version int not null primary key);")
+	_, err := driver.db.Exec(`CREATE TABLE IF NOT EXISTS ` + tableName + ` (
+		id text,
+		version int not null primary key
+	)`)
 
 	if _, isWarn := err.(mysql.MySQLWarnings); err != nil && !isWarn {
 		return err
@@ -74,7 +77,7 @@ func (driver *Driver) FilenameExtension() string {
 	return "sql"
 }
 
-func (driver *Driver) Migrate(f file.File, pipe chan interface{}) {
+func (driver *Driver) Migrate(id string, f file.File, pipe chan interface{}) {
 	defer close(pipe)
 	pipe <- f
 
@@ -87,7 +90,8 @@ func (driver *Driver) Migrate(f file.File, pipe chan interface{}) {
 	}
 
 	if f.Direction == direction.Up {
-		if _, err := tx.Exec("INSERT INTO "+tableName+" (version) VALUES (?)", f.Version); err != nil {
+		q := `INSERT INTO ` + tableName + ` (id, version) VALUES (?, ?)`
+		if _, err := tx.Exec(q, id, f.Version); err != nil {
 			pipe <- err
 			if err := tx.Rollback(); err != nil {
 				pipe <- err
@@ -95,7 +99,8 @@ func (driver *Driver) Migrate(f file.File, pipe chan interface{}) {
 			return
 		}
 	} else if f.Direction == direction.Down {
-		if _, err := tx.Exec("DELETE FROM "+tableName+" WHERE version = ?", f.Version); err != nil {
+		q := `DELETE FROM ` + tableName + ` WHERE id = ? AND version = ?`
+		if _, err := tx.Exec(q, id, f.Version); err != nil {
 			pipe <- err
 			if err := tx.Rollback(); err != nil {
 				pipe <- err
@@ -176,9 +181,12 @@ func (driver *Driver) Migrate(f file.File, pipe chan interface{}) {
 	}
 }
 
-func (driver *Driver) Version() (uint64, error) {
+func (driver *Driver) Version(id string) (uint64, error) {
 	var version uint64
-	err := driver.db.QueryRow("SELECT version FROM " + tableName + " ORDER BY version DESC").Scan(&version)
+	err := driver.db.QueryRow(`
+		SELECT version FROM `+tableName+`
+		WHERE id = ?
+		ORDER BY version DESC`, id).Scan(&version)
 	switch {
 	case err == sql.ErrNoRows:
 		return 0, nil

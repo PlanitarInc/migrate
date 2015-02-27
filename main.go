@@ -19,6 +19,7 @@ import (
 
 var url = flag.String("url", "", "")
 var migrationsPath = flag.String("path", "", "")
+var migrationId = flag.String("path", "", "")
 var version = flag.Bool("version", false, "Show migrate version")
 
 func main() {
@@ -30,21 +31,19 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *migrationsPath == "" {
-		*migrationsPath, _ = os.Getwd()
-	}
+	cli := CliOptions{}
+	cli.Init()
 
 	switch command {
 	case "create":
-		verifyMigrationsPath(*migrationsPath)
+		cli.verifyMigrationsPath()
 		name := flag.Arg(1)
 		if name == "" {
 			fmt.Println("Please specify name.")
 			os.Exit(1)
 		}
 
-		opts := &migrate.Options{Url: *url, Path: *migrationsPath}
-		migrationFile, err := migrate.Create(opts, name)
+		migrationFile, err := migrate.Create(cli.Options, name)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -55,7 +54,7 @@ func main() {
 		fmt.Println(migrationFile.DownFile.FileName)
 
 	case "migrate":
-		verifyMigrationsPath(*migrationsPath)
+		cli.verifyMigrationsPath()
 		relativeN := flag.Arg(1)
 		relativeNInt, err := strconv.Atoi(relativeN)
 		if err != nil {
@@ -64,8 +63,7 @@ func main() {
 		}
 		timerStart = time.Now()
 		pipe := pipep.New()
-		opts := &migrate.Options{Url: *url, Path: *migrationsPath}
-		go migrate.Migrate(pipe, opts, relativeNInt)
+		go migrate.Migrate(pipe, cli.Options, relativeNInt)
 		ok := writePipe(pipe)
 		printTimer()
 		if !ok {
@@ -73,7 +71,7 @@ func main() {
 		}
 
 	case "goto":
-		verifyMigrationsPath(*migrationsPath)
+		cli.verifyMigrationsPath()
 		toVersion := flag.Arg(1)
 		toVersionInt, err := strconv.Atoi(toVersion)
 		if err != nil || toVersionInt < 0 {
@@ -81,8 +79,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		opts := &migrate.Options{Url: *url, Path: *migrationsPath}
-		currentVersion, err := migrate.Version(opts)
+		currentVersion, err := migrate.Version(cli.Options)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -92,7 +89,7 @@ func main() {
 
 		timerStart = time.Now()
 		pipe := pipep.New()
-		go migrate.Migrate(pipe, opts, relativeNInt)
+		go migrate.Migrate(pipe, cli.Options, relativeNInt)
 		ok := writePipe(pipe)
 		printTimer()
 		if !ok {
@@ -100,11 +97,10 @@ func main() {
 		}
 
 	case "up":
-		verifyMigrationsPath(*migrationsPath)
+		cli.verifyMigrationsPath()
 		timerStart = time.Now()
 		pipe := pipep.New()
-		opts := &migrate.Options{Url: *url, Path: *migrationsPath}
-		go migrate.Up(pipe, opts)
+		go migrate.Up(pipe, cli.Options)
 		ok := writePipe(pipe)
 		printTimer()
 		if !ok {
@@ -112,11 +108,10 @@ func main() {
 		}
 
 	case "down":
-		verifyMigrationsPath(*migrationsPath)
+		cli.verifyMigrationsPath()
 		timerStart = time.Now()
 		pipe := pipep.New()
-		opts := &migrate.Options{Url: *url, Path: *migrationsPath}
-		go migrate.Down(pipe, opts)
+		go migrate.Down(pipe, cli.Options)
 		ok := writePipe(pipe)
 		printTimer()
 		if !ok {
@@ -124,11 +119,10 @@ func main() {
 		}
 
 	case "redo":
-		verifyMigrationsPath(*migrationsPath)
+		cli.verifyMigrationsPath()
 		timerStart = time.Now()
 		pipe := pipep.New()
-		opts := &migrate.Options{Url: *url, Path: *migrationsPath}
-		go migrate.Redo(pipe, opts)
+		go migrate.Redo(pipe, cli.Options)
 		ok := writePipe(pipe)
 		printTimer()
 		if !ok {
@@ -136,11 +130,10 @@ func main() {
 		}
 
 	case "reset":
-		verifyMigrationsPath(*migrationsPath)
+		cli.verifyMigrationsPath()
 		timerStart = time.Now()
 		pipe := pipep.New()
-		opts := &migrate.Options{Url: *url, Path: *migrationsPath}
-		go migrate.Reset(pipe, opts)
+		go migrate.Reset(pipe, cli.Options)
 		ok := writePipe(pipe)
 		printTimer()
 		if !ok {
@@ -148,9 +141,8 @@ func main() {
 		}
 
 	case "version":
-		verifyMigrationsPath(*migrationsPath)
-		opts := &migrate.Options{Url: *url, Path: *migrationsPath}
-		version, err := migrate.Version(opts)
+		cli.verifyMigrationsPath()
+		version, err := migrate.Version(cli.Options)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -204,8 +196,21 @@ func writePipe(pipe chan interface{}) (ok bool) {
 	return okFlag
 }
 
-func verifyMigrationsPath(path string) {
-	if path == "" {
+type CliOptions struct {
+	*migrate.Options
+}
+
+func (o *CliOptions) Init() {
+	o.Id = *migrationId
+	o.Url = *url
+	o.Path = *migrationsPath
+	if o.Path == "" {
+		o.Path, _ = os.Getwd()
+	}
+}
+
+func (o CliOptions) verifyMigrationsPath() {
+	if o.Path == "" {
 		fmt.Println("Please specify path")
 		os.Exit(1)
 	}

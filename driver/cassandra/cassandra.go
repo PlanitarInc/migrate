@@ -90,7 +90,7 @@ func (driver *Driver) ensureVersionTableExists() error {
 		return err
 	}
 
-	_, err = driver.Version()
+	_, err = driver.Version("")
 	if err != nil {
 		driver.session.Query(up.String(), versionRow).Exec()
 	}
@@ -116,7 +116,9 @@ func (driver *Driver) version(d direction.Direction, invert bool) error {
 	return driver.session.Query(stmt.String(), versionRow).Exec()
 }
 
-func (driver *Driver) Migrate(f file.File, pipe chan interface{}) {
+func (driver *Driver) Migrate(id string, f file.File, pipe chan interface{}) {
+	// XXX id is not supported
+
 	var err error
 	defer func() {
 		if err != nil {
@@ -150,7 +152,9 @@ func (driver *Driver) Migrate(f file.File, pipe chan interface{}) {
 	}
 }
 
-func (driver *Driver) Version() (uint64, error) {
+func (driver *Driver) Version(id string) (uint64, error) {
+	// XXX id is not supported
+
 	var version int64
 	err := driver.session.Query("SELECT version FROM "+tableName+" WHERE versionRow = ?", versionRow).Scan(&version)
 	return uint64(version) - 1, err

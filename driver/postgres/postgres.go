@@ -53,7 +53,11 @@ func (driver *Driver) Close() error {
 }
 
 func (driver *Driver) ensureVersionTableExists() error {
-	if _, err := driver.db.Exec("CREATE TABLE IF NOT EXISTS " + tableName + " (version int not null primary key);"); err != nil {
+	q := `CREATE TABLE IF NOT EXISTS ` + tableName + ` (
+		id text,
+		version int not null primary key
+	)`
+	if _, err := driver.db.Exec(q); err != nil {
 		return err
 	}
 	return nil
@@ -63,7 +67,7 @@ func (driver *Driver) FilenameExtension() string {
 	return "sql"
 }
 
-func (driver *Driver) Migrate(f file.File, pipe chan interface{}) {
+func (driver *Driver) Migrate(id string, f file.File, pipe chan interface{}) {
 	defer close(pipe)
 	pipe <- f
 
@@ -74,7 +78,8 @@ func (driver *Driver) Migrate(f file.File, pipe chan interface{}) {
 	}
 
 	if f.Direction == direction.Up {
-		if _, err := tx.Exec("INSERT INTO "+tableName+" (version) VALUES ($1)", f.Version); err != nil {
+		q := `INSERT INTO ` + tableName + ` (id, version) VALUES ($1, $2)`
+		if _, err := tx.Exec(q, id, f.Version); err != nil {
 			pipe <- err
 			if err := tx.Rollback(); err != nil {
 				pipe <- err
@@ -82,7 +87,8 @@ func (driver *Driver) Migrate(f file.File, pipe chan interface{}) {
 			return
 		}
 	} else if f.Direction == direction.Down {
-		if _, err := tx.Exec("DELETE FROM "+tableName+" WHERE version=$1", f.Version); err != nil {
+		q := `DELETE FROM ` + tableName + ` WHERE id = $1 AND version = $2`
+		if _, err := tx.Exec(q, id, f.Version); err != nil {
 			pipe <- err
 			if err := tx.Rollback(); err != nil {
 				pipe <- err
@@ -119,9 +125,13 @@ func (driver *Driver) Migrate(f file.File, pipe chan interface{}) {
 	}
 }
 
-func (driver *Driver) Version() (uint64, error) {
+func (driver *Driver) Version(id string) (uint64, error) {
 	var version uint64
-	err := driver.db.QueryRow("SELECT version FROM " + tableName + " ORDER BY version DESC LIMIT 1").Scan(&version)
+	err := driver.db.QueryRow(`
+		SELECT version FROM `+tableName+`
+		WHERE id = $1
+		ORDER BY version DESC
+		LIMIT 1`, id).Scan(&version)
 	switch {
 	case err == sql.ErrNoRows:
 		return 0, nil

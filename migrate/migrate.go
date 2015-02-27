@@ -18,6 +18,7 @@ import (
 )
 
 type Options struct {
+	Id       string
 	Url      string
 	Instance interface{}
 	Path     string
@@ -43,7 +44,7 @@ func Up(pipe chan interface{}, opts *Options) {
 	if len(applyMigrationFiles) > 0 {
 		for _, f := range applyMigrationFiles {
 			pipe1 := pipep.New()
-			go d.Migrate(f, pipe1)
+			go d.Migrate(opts.Id, f, pipe1)
 			if ok := pipep.WaitAndRedirect(pipe1, pipe, handleInterrupts()); !ok {
 				break
 			}
@@ -90,7 +91,7 @@ func Down(pipe chan interface{}, opts *Options) {
 	if len(applyMigrationFiles) > 0 {
 		for _, f := range applyMigrationFiles {
 			pipe1 := pipep.New()
-			go d.Migrate(f, pipe1)
+			go d.Migrate(opts.Id, f, pipe1)
 			if ok := pipep.WaitAndRedirect(pipe1, pipe, handleInterrupts()); !ok {
 				break
 			}
@@ -177,7 +178,7 @@ func Migrate(pipe chan interface{}, opts *Options, relativeN int) {
 	if len(applyMigrationFiles) > 0 && relativeN != 0 {
 		for _, f := range applyMigrationFiles {
 			pipe1 := pipep.New()
-			go d.Migrate(f, pipe1)
+			go d.Migrate(opts.Id, f, pipe1)
 			if ok := pipep.WaitAndRedirect(pipe1, pipe, handleInterrupts()); !ok {
 				break
 			}
@@ -209,7 +210,7 @@ func Version(opts *Options) (version uint64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return d.Version()
+	return d.Version(opts.Id)
 }
 
 // Create creates new migration files on disk
@@ -281,7 +282,7 @@ func initDriverAndReadMigrationFilesAndGetVersion(opts *Options) (driver.Driver,
 		d.Close() // TODO what happens with errors from this func?
 		return nil, nil, 0, err
 	}
-	version, err := d.Version()
+	version, err := d.Version(opts.Id)
 	if err != nil {
 		d.Close() // TODO what happens with errors from this func?
 		return nil, nil, 0, err

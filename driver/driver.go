@@ -34,10 +34,10 @@ type Driver interface {
 	// It will receive a file which the driver should apply
 	// to its backend or whatever. The migration function should use
 	// the pipe channel to return any errors or other useful information.
-	Migrate(file file.File, pipe chan interface{})
+	Migrate(id string, file file.File, pipe chan interface{})
 
 	// Version returns the current migration version.
-	Version() (uint64, error)
+	Version(id string) (uint64, error)
 }
 
 // New returns Driver and calls Initialize on it
