@@ -11,10 +11,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mattes/migrate/driver"
-	"github.com/mattes/migrate/file"
-	"github.com/mattes/migrate/migrate/direction"
-	pipep "github.com/mattes/migrate/pipe"
+	"github.com/PlanitarInc/migrate/driver"
+	"github.com/PlanitarInc/migrate/file"
+	"github.com/PlanitarInc/migrate/migrate/direction"
+	pipep "github.com/PlanitarInc/migrate/pipe"
 )
 
 // Up applies all available migrations
@@ -313,8 +313,8 @@ var fileStore file.FileStore = &file.FSStore{}
 // Read migration scripts from a given file store.
 //
 // In order to use bindata asset as a store:
-// 	import "github.com/mattes/migrate/migrate"
-// 	import "github.com/mattes/migrate/file"
+// 	import "github.com/PlanitarInc/migrate/migrate"
+// 	import "github.com/PlanitarInc/migrate/file"
 // 	...
 // 	migrate.UseStore(file.AssetStore{
 // 		Asset: Asset,

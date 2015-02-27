@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mattes/migrate/migrate/direction"
+	"github.com/PlanitarInc/migrate/migrate/direction"
 )
 
 var filenameRegex = `^([0-9]+)_(.*)\.(up|down)\.%s$`

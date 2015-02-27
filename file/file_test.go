@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mattes/migrate/migrate/direction"
+	"github.com/PlanitarInc/migrate/migrate/direction"
 )
 
 func TestParseFilenameSchema(t *testing.T) {
