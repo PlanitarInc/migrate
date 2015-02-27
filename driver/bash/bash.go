@@ -9,7 +9,7 @@ import (
 type Driver struct {
 }
 
-func (driver *Driver) Initialize(url string) error {
+func (driver *Driver) Initialize(instance interface{}, url string) error {
 	return nil
 }
 

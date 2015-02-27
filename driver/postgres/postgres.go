@@ -5,10 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/lib/pq"
+	"strconv"
+
 	"github.com/PlanitarInc/migrate/file"
 	"github.com/PlanitarInc/migrate/migrate/direction"
-	"strconv"
+	"github.com/lib/pq"
 )
 
 type Driver struct {
@@ -17,8 +18,19 @@ type Driver struct {
 
 const tableName = "schema_migrations"
 
-func (driver *Driver) Initialize(url string) error {
-	db, err := sql.Open("postgres", url)
+func (driver *Driver) getInstance(instance interface{}, url string) (*sql.DB, error) {
+	if instance == nil {
+		return sql.Open("postgres", url)
+	}
+	if db, ok := instance.(*sql.DB); !ok {
+		return nil, fmt.Errorf("Expected instance of *sql.DB, got %#v", instance)
+	} else {
+		return db, nil
+	}
+}
+
+func (driver *Driver) Initialize(instance interface{}, url string) error {
+	db, err := driver.getInstance(instance, url)
 	if err != nil {
 		return err
 	}

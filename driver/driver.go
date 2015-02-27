@@ -17,9 +17,10 @@ import (
 type Driver interface {
 
 	// Initialize is the first function to be called.
-	// Check the url string and open and verify any connection
-	// that has to be made.
-	Initialize(url string) error
+	// If instance is not nil, try to use instance as connection/session.
+	// If instance is nil, check the url string and open and verify any
+	// connection that has to be made.
+	Initialize(instance interface{}, url string) error
 
 	// Close is the last function to be called.
 	// Close any open connection here.
@@ -40,7 +41,7 @@ type Driver interface {
 }
 
 // New returns Driver and calls Initialize on it
-func New(url string) (Driver, error) {
+func New(instance interface{}, url string) (Driver, error) {
 	u, err := neturl.Parse(url)
 	if err != nil {
 		return nil, err
@@ -50,7 +51,7 @@ func New(url string) (Driver, error) {
 	case "postgres":
 		d := &postgres.Driver{}
 		verifyFilenameExtension("postgres", d)
-		if err := d.Initialize(url); err != nil {
+		if err := d.Initialize(instance, url); err != nil {
 			return nil, err
 		}
 		return d, nil
@@ -58,7 +59,7 @@ func New(url string) (Driver, error) {
 	case "mysql":
 		d := &mysql.Driver{}
 		verifyFilenameExtension("mysql", d)
-		if err := d.Initialize(url); err != nil {
+		if err := d.Initialize(instance, url); err != nil {
 			return nil, err
 		}
 		return d, nil
@@ -66,7 +67,7 @@ func New(url string) (Driver, error) {
 	case "bash":
 		d := &bash.Driver{}
 		verifyFilenameExtension("bash", d)
-		if err := d.Initialize(url); err != nil {
+		if err := d.Initialize(instance, url); err != nil {
 			return nil, err
 		}
 		return d, nil
@@ -74,7 +75,7 @@ func New(url string) (Driver, error) {
 	case "cassandra":
 		d := &cassandra.Driver{}
 		verifyFilenameExtension("cassanda", d)
-		if err := d.Initialize(url); err != nil {
+		if err := d.Initialize(instance, url); err != nil {
 			return nil, err
 		}
 		return d, nil

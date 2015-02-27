@@ -2,11 +2,12 @@ package mysql
 
 import (
 	"database/sql"
+	"strings"
+	"testing"
+
 	"github.com/PlanitarInc/migrate/file"
 	"github.com/PlanitarInc/migrate/migrate/direction"
 	pipep "github.com/PlanitarInc/migrate/pipe"
-	"strings"
-	"testing"
 )
 
 // TestMigrate runs some additional tests on Migrate().
@@ -25,7 +26,7 @@ func TestMigrate(t *testing.T) {
 	}
 
 	d := &Driver{}
-	if err := d.Initialize(driverUrl); err != nil {
+	if err := d.Initialize(nil, driverUrl); err != nil {
 		t.Fatal(err)
 	}
 

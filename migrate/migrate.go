@@ -18,8 +18,9 @@ import (
 )
 
 type Options struct {
-	Url  string
-	Path string
+	Url      string
+	Instance interface{}
+	Path     string
 }
 
 // Up applies all available migrations
@@ -204,7 +205,7 @@ func MigrateSync(opts *Options, relativeN int) (err []error, ok bool) {
 
 // Version returns the current migration version
 func Version(opts *Options) (version uint64, err error) {
-	d, err := driver.New(opts.Url)
+	d, err := driver.New(opts.Instance, opts.Url)
 	if err != nil {
 		return 0, err
 	}
@@ -213,7 +214,7 @@ func Version(opts *Options) (version uint64, err error) {
 
 // Create creates new migration files on disk
 func Create(opts *Options, name string) (*file.MigrationFile, error) {
-	d, err := driver.New(opts.Url)
+	d, err := driver.New(opts.Instance, opts.Url)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +271,7 @@ func Create(opts *Options, name string) (*file.MigrationFile, error) {
 // initDriverAndReadMigrationFilesAndGetVersion is a small helper
 // function that is common to most of the migration funcs
 func initDriverAndReadMigrationFilesAndGetVersion(opts *Options) (driver.Driver, *file.MigrationFiles, uint64, error) {
-	d, err := driver.New(opts.Url)
+	d, err := driver.New(opts.Instance, opts.Url)
 	if err != nil {
 		return nil, nil, 0, err
 	}

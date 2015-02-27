@@ -3,12 +3,13 @@ package cassandra
 
 import (
 	"fmt"
-	"github.com/gocql/gocql"
-	"github.com/PlanitarInc/migrate/file"
-	"github.com/PlanitarInc/migrate/migrate/direction"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/PlanitarInc/migrate/file"
+	"github.com/PlanitarInc/migrate/migrate/direction"
+	"github.com/gocql/gocql"
 )
 
 type Driver struct {
@@ -42,7 +43,8 @@ const (
 //
 // Example:
 // cassandra://localhost/SpaceOfKeys
-func (driver *Driver) Initialize(rawurl string) error {
+func (driver *Driver) Initialize(instance interface{}, rawurl string) error {
+	// TODO try to reuse open connection passed in instance
 	u, err := url.Parse(rawurl)
 
 	cluster := gocql.NewCluster(u.Host)

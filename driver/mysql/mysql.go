@@ -7,12 +7,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/go-sql-driver/mysql"
-	"github.com/PlanitarInc/migrate/file"
-	"github.com/PlanitarInc/migrate/migrate/direction"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/PlanitarInc/migrate/file"
+	"github.com/PlanitarInc/migrate/migrate/direction"
+	"github.com/go-sql-driver/mysql"
 )
 
 type Driver struct {
@@ -21,13 +22,23 @@ type Driver struct {
 
 const tableName = "schema_migrations"
 
-func (driver *Driver) Initialize(url string) error {
-	urlWithoutScheme := strings.SplitN(url, "mysql://", 2)
-	if len(urlWithoutScheme) != 2 {
-		return errors.New("invalid mysql:// scheme")
+func (driver *Driver) getInstance(instance interface{}, url string) (*sql.DB, error) {
+	if instance == nil {
+		urlWithoutScheme := strings.SplitN(url, "mysql://", 2)
+		if len(urlWithoutScheme) != 2 {
+			return nil, errors.New("invalid mysql:// scheme")
+		}
+		return sql.Open("mysql", urlWithoutScheme[1])
 	}
+	if db, ok := instance.(*sql.DB); !ok {
+		return nil, fmt.Errorf("Expected instance of *sql.DB, got %#v", instance)
+	} else {
+		return db, nil
+	}
+}
 
-	db, err := sql.Open("mysql", urlWithoutScheme[1])
+func (driver *Driver) Initialize(instance interface{}, url string) error {
+	db, err := driver.getInstance(instance, url)
 	if err != nil {
 		return err
 	}

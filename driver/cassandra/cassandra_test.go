@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gocql/gocql"
 	"github.com/PlanitarInc/migrate/file"
 	"github.com/PlanitarInc/migrate/migrate/direction"
 	pipep "github.com/PlanitarInc/migrate/pipe"
+	"github.com/gocql/gocql"
 )
 
 func TestMigrate(t *testing.T) {
@@ -40,7 +40,7 @@ func TestMigrate(t *testing.T) {
 	}
 
 	d := &Driver{}
-	if err := d.Initialize(driverUrl); err != nil {
+	if err := d.Initialize(nil, driverUrl); err != nil {
 		t.Fatal(err)
 	}
 
