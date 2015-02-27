@@ -17,9 +17,14 @@ import (
 	pipep "github.com/PlanitarInc/migrate/pipe"
 )
 
+type Options struct {
+	Url  string
+	Path string
+}
+
 // Up applies all available migrations
-func Up(pipe chan interface{}, url, migrationsPath string) {
-	d, files, version, err := initDriverAndReadMigrationFilesAndGetVersion(url, migrationsPath)
+func Up(pipe chan interface{}, opts *Options) {
+	d, files, version, err := initDriverAndReadMigrationFilesAndGetVersion(opts)
 	if err != nil {
 		go pipep.Close(pipe, err)
 		return
@@ -57,16 +62,16 @@ func Up(pipe chan interface{}, url, migrationsPath string) {
 }
 
 // UpSync is synchronous version of Up
-func UpSync(url, migrationsPath string) (err []error, ok bool) {
+func UpSync(opts *Options) (err []error, ok bool) {
 	pipe := pipep.New()
-	go Up(pipe, url, migrationsPath)
+	go Up(pipe, opts)
 	err = pipep.ReadErrors(pipe)
 	return err, len(err) == 0
 }
 
 // Down rolls back all migrations
-func Down(pipe chan interface{}, url, migrationsPath string) {
-	d, files, version, err := initDriverAndReadMigrationFilesAndGetVersion(url, migrationsPath)
+func Down(pipe chan interface{}, opts *Options) {
+	d, files, version, err := initDriverAndReadMigrationFilesAndGetVersion(opts)
 	if err != nil {
 		go pipep.Close(pipe, err)
 		return
@@ -104,56 +109,56 @@ func Down(pipe chan interface{}, url, migrationsPath string) {
 }
 
 // DownSync is synchronous version of Down
-func DownSync(url, migrationsPath string) (err []error, ok bool) {
+func DownSync(opts *Options) (err []error, ok bool) {
 	pipe := pipep.New()
-	go Down(pipe, url, migrationsPath)
+	go Down(pipe, opts)
 	err = pipep.ReadErrors(pipe)
 	return err, len(err) == 0
 }
 
 // Redo rolls back the most recently applied migration, then runs it again.
-func Redo(pipe chan interface{}, url, migrationsPath string) {
+func Redo(pipe chan interface{}, opts *Options) {
 	pipe1 := pipep.New()
-	go Migrate(pipe1, url, migrationsPath, -1)
+	go Migrate(pipe1, opts, -1)
 	if ok := pipep.WaitAndRedirect(pipe1, pipe, handleInterrupts()); !ok {
 		go pipep.Close(pipe, nil)
 		return
 	} else {
-		go Migrate(pipe, url, migrationsPath, +1)
+		go Migrate(pipe, opts, +1)
 	}
 }
 
 // RedoSync is synchronous version of Redo
-func RedoSync(url, migrationsPath string) (err []error, ok bool) {
+func RedoSync(opts *Options) (err []error, ok bool) {
 	pipe := pipep.New()
-	go Redo(pipe, url, migrationsPath)
+	go Redo(pipe, opts)
 	err = pipep.ReadErrors(pipe)
 	return err, len(err) == 0
 }
 
 // Reset runs the down and up migration function
-func Reset(pipe chan interface{}, url, migrationsPath string) {
+func Reset(pipe chan interface{}, opts *Options) {
 	pipe1 := pipep.New()
-	go Down(pipe1, url, migrationsPath)
+	go Down(pipe1, opts)
 	if ok := pipep.WaitAndRedirect(pipe1, pipe, handleInterrupts()); !ok {
 		go pipep.Close(pipe, nil)
 		return
 	} else {
-		go Up(pipe, url, migrationsPath)
+		go Up(pipe, opts)
 	}
 }
 
 // ResetSync is synchronous version of Reset
-func ResetSync(url, migrationsPath string) (err []error, ok bool) {
+func ResetSync(opts *Options) (err []error, ok bool) {
 	pipe := pipep.New()
-	go Reset(pipe, url, migrationsPath)
+	go Reset(pipe, opts)
 	err = pipep.ReadErrors(pipe)
 	return err, len(err) == 0
 }
 
 // Migrate applies relative +n/-n migrations
-func Migrate(pipe chan interface{}, url, migrationsPath string, relativeN int) {
-	d, files, version, err := initDriverAndReadMigrationFilesAndGetVersion(url, migrationsPath)
+func Migrate(pipe chan interface{}, opts *Options, relativeN int) {
+	d, files, version, err := initDriverAndReadMigrationFilesAndGetVersion(opts)
 	if err != nil {
 		go pipep.Close(pipe, err)
 		return
@@ -190,16 +195,16 @@ func Migrate(pipe chan interface{}, url, migrationsPath string, relativeN int) {
 }
 
 // MigrateSync is synchronous version of Migrate
-func MigrateSync(url, migrationsPath string, relativeN int) (err []error, ok bool) {
+func MigrateSync(opts *Options, relativeN int) (err []error, ok bool) {
 	pipe := pipep.New()
-	go Migrate(pipe, url, migrationsPath, relativeN)
+	go Migrate(pipe, opts, relativeN)
 	err = pipep.ReadErrors(pipe)
 	return err, len(err) == 0
 }
 
 // Version returns the current migration version
-func Version(url, migrationsPath string) (version uint64, err error) {
-	d, err := driver.New(url)
+func Version(opts *Options) (version uint64, err error) {
+	d, err := driver.New(opts.Url)
 	if err != nil {
 		return 0, err
 	}
@@ -207,12 +212,12 @@ func Version(url, migrationsPath string) (version uint64, err error) {
 }
 
 // Create creates new migration files on disk
-func Create(url, migrationsPath, name string) (*file.MigrationFile, error) {
-	d, err := driver.New(url)
+func Create(opts *Options, name string) (*file.MigrationFile, error) {
+	d, err := driver.New(opts.Url)
 	if err != nil {
 		return nil, err
 	}
-	files, err := file.ReadMigrationFilesFromStore(fileStore, migrationsPath,
+	files, err := file.ReadMigrationFilesFromStore(fileStore, opts.Path,
 		file.FilenameRegex(d.FilenameExtension()))
 	if err != nil {
 		return nil, err
@@ -237,14 +242,14 @@ func Create(url, migrationsPath, name string) (*file.MigrationFile, error) {
 	mfile := &file.MigrationFile{
 		Version: version,
 		UpFile: &file.File{
-			Path:      migrationsPath,
+			Path:      opts.Path,
 			FileName:  fmt.Sprintf(filenamef, versionStr, name, "up", d.FilenameExtension()),
 			Name:      name,
 			Content:   []byte(""),
 			Direction: direction.Up,
 		},
 		DownFile: &file.File{
-			Path:      migrationsPath,
+			Path:      opts.Path,
 			FileName:  fmt.Sprintf(filenamef, versionStr, name, "down", d.FilenameExtension()),
 			Name:      name,
 			Content:   []byte(""),
@@ -264,12 +269,12 @@ func Create(url, migrationsPath, name string) (*file.MigrationFile, error) {
 
 // initDriverAndReadMigrationFilesAndGetVersion is a small helper
 // function that is common to most of the migration funcs
-func initDriverAndReadMigrationFilesAndGetVersion(url, migrationsPath string) (driver.Driver, *file.MigrationFiles, uint64, error) {
-	d, err := driver.New(url)
+func initDriverAndReadMigrationFilesAndGetVersion(opts *Options) (driver.Driver, *file.MigrationFiles, uint64, error) {
+	d, err := driver.New(opts.Url)
 	if err != nil {
 		return nil, nil, 0, err
 	}
-	files, err := file.ReadMigrationFilesFromStore(fileStore, migrationsPath,
+	files, err := file.ReadMigrationFilesFromStore(fileStore, opts.Path,
 		file.FilenameRegex(d.FilenameExtension()))
 	if err != nil {
 		d.Close() // TODO what happens with errors from this func?
