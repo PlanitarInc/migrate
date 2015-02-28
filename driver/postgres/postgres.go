@@ -66,7 +66,8 @@ func (driver *Driver) Close() error {
 func (driver *Driver) ensureVersionTableExists() error {
 	q := `CREATE TABLE IF NOT EXISTS ` + tableName + ` (
 		id text,
-		version int not null primary key
+		version int not null,
+		primary key (id, version)
 	)`
 	if _, err := driver.db.Exec(q); err != nil {
 		return err

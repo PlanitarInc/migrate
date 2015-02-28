@@ -74,8 +74,9 @@ func (driver *Driver) Close() error {
 
 func (driver *Driver) ensureVersionTableExists() error {
 	_, err := driver.db.Exec(`CREATE TABLE IF NOT EXISTS ` + tableName + ` (
-		id text,
-		version int not null primary key
+		id varchar(100),
+		version int not null,
+		primary key (id, version)
 	)`)
 
 	if _, isWarn := err.(mysql.MySQLWarnings); err != nil && !isWarn {
