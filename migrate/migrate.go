@@ -17,11 +17,22 @@ import (
 	pipep "github.com/PlanitarInc/migrate/pipe"
 )
 
+// Read migration scripts from a given file store.
+//
+// In order to use bindata asset as a store:
+// 	import "github.com/PlanitarInc/migrate/migrate"
+// 	import "github.com/PlanitarInc/migrate/file"
+// 	...
+// 	migrate.UseStore(file.AssetStore{
+// 		Asset: Asset,
+// 		AssetDir: AssetDir,
+// 	})
 type Migrator struct {
 	Id       string
 	Url      string
 	Instance interface{}
 	Path     string
+	Store    file.FileStore
 }
 
 // Up applies all available migrations
@@ -219,7 +230,7 @@ func (m Migrator) Create(name string) (*file.MigrationFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	files, err := file.ReadMigrationFilesFromStore(fileStore, m.Path,
+	files, err := file.ReadMigrationFilesFromStore(m.Store, m.Path,
 		file.FilenameRegex(d.FilenameExtension()))
 	if err != nil {
 		return nil, err
@@ -276,7 +287,7 @@ func (m Migrator) initDriverAndReadMigrationFilesAndGetVersion() (driver.Driver,
 	if err != nil {
 		return nil, nil, 0, err
 	}
-	files, err := file.ReadMigrationFilesFromStore(fileStore, m.Path,
+	files, err := file.ReadMigrationFilesFromStore(m.Store, m.Path,
 		file.FilenameRegex(d.FilenameExtension()))
 	if err != nil {
 		d.Close() // TODO what happens with errors from this func?
@@ -312,23 +323,6 @@ func Graceful() {
 // stop execution immediately.
 func NonGraceful() {
 	interrupts = false
-}
-
-// File store to read migration scripts from
-var fileStore file.FileStore = &file.FSStore{}
-
-// Read migration scripts from a given file store.
-//
-// In order to use bindata asset as a store:
-// 	import "github.com/PlanitarInc/migrate/migrate"
-// 	import "github.com/PlanitarInc/migrate/file"
-// 	...
-// 	migrate.UseStore(file.AssetStore{
-// 		Asset: Asset,
-// 		AssetDir: AssetDir,
-// 	})
-func UseStore(store file.FileStore) {
-	fileStore = store
 }
 
 // interrupts returns a signal channel if interrupts checking is

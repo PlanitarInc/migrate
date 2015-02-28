@@ -158,6 +158,9 @@ func (mf *MigrationFiles) From(version uint64, relativeN int) (Files, error) {
 
 // ReadMigrationFilesFromStore reads all migration files from a given file store
 func ReadMigrationFilesFromStore(store FileStore, path string, filenameRegex *regexp.Regexp) (files MigrationFiles, err error) {
+	if store == nil {
+		store = &FSStore{}
+	}
 	// find all migration files in path
 	dirFiles, err := store.ReadDir(path)
 	if err != nil {
