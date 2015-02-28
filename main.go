@@ -19,7 +19,7 @@ import (
 
 var url = flag.String("url", "", "")
 var migrationsPath = flag.String("path", "", "")
-var migrationId = flag.String("path", "", "")
+var migrationId = flag.String("id", "", "")
 var version = flag.Bool("version", false, "Show migrate version")
 
 func main() {
@@ -229,7 +229,7 @@ func printTimer() {
 
 func helpCmd() {
 	os.Stderr.WriteString(
-		`usage: migrate [-path=<path>] -url=<url> <command> [<args>]
+		`usage: migrate [-path=<path>] [-id=<id>] -url=<url> <command> [<args>]
 
 Commands:
    create <name>  Create a new migration
