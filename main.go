@@ -43,7 +43,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		migrationFile, err := migrate.Create(cli.Options, name)
+		migrationFile, err := cli.M.Create(name)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -63,7 +63,7 @@ func main() {
 		}
 		timerStart = time.Now()
 		pipe := pipep.New()
-		go migrate.Migrate(pipe, cli.Options, relativeNInt)
+		go cli.M.Migrate(pipe, relativeNInt)
 		ok := writePipe(pipe)
 		printTimer()
 		if !ok {
@@ -79,7 +79,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		currentVersion, err := migrate.Version(cli.Options)
+		currentVersion, err := cli.M.Version()
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -89,7 +89,7 @@ func main() {
 
 		timerStart = time.Now()
 		pipe := pipep.New()
-		go migrate.Migrate(pipe, cli.Options, relativeNInt)
+		go cli.M.Migrate(pipe, relativeNInt)
 		ok := writePipe(pipe)
 		printTimer()
 		if !ok {
@@ -100,7 +100,7 @@ func main() {
 		cli.verifyMigrationsPath()
 		timerStart = time.Now()
 		pipe := pipep.New()
-		go migrate.Up(pipe, cli.Options)
+		go cli.M.Up(pipe)
 		ok := writePipe(pipe)
 		printTimer()
 		if !ok {
@@ -111,7 +111,7 @@ func main() {
 		cli.verifyMigrationsPath()
 		timerStart = time.Now()
 		pipe := pipep.New()
-		go migrate.Down(pipe, cli.Options)
+		go cli.M.Down(pipe)
 		ok := writePipe(pipe)
 		printTimer()
 		if !ok {
@@ -122,7 +122,7 @@ func main() {
 		cli.verifyMigrationsPath()
 		timerStart = time.Now()
 		pipe := pipep.New()
-		go migrate.Redo(pipe, cli.Options)
+		go cli.M.Redo(pipe)
 		ok := writePipe(pipe)
 		printTimer()
 		if !ok {
@@ -133,7 +133,7 @@ func main() {
 		cli.verifyMigrationsPath()
 		timerStart = time.Now()
 		pipe := pipep.New()
-		go migrate.Reset(pipe, cli.Options)
+		go cli.M.Reset(pipe)
 		ok := writePipe(pipe)
 		printTimer()
 		if !ok {
@@ -142,7 +142,7 @@ func main() {
 
 	case "version":
 		cli.verifyMigrationsPath()
-		version, err := migrate.Version(cli.Options)
+		version, err := cli.M.Version()
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -197,20 +197,20 @@ func writePipe(pipe chan interface{}) (ok bool) {
 }
 
 type CliOptions struct {
-	*migrate.Options
+	M migrate.Migrator
 }
 
-func (o *CliOptions) Init() {
-	o.Id = *migrationId
-	o.Url = *url
-	o.Path = *migrationsPath
-	if o.Path == "" {
-		o.Path, _ = os.Getwd()
+func (cli *CliOptions) Init() {
+	cli.M.Id = *migrationId
+	cli.M.Url = *url
+	cli.M.Path = *migrationsPath
+	if cli.M.Path == "" {
+		cli.M.Path, _ = os.Getwd()
 	}
 }
 
-func (o CliOptions) verifyMigrationsPath() {
-	if o.Path == "" {
+func (cli CliOptions) verifyMigrationsPath() {
+	if cli.M.Path == "" {
 		fmt.Println("Please specify path")
 		os.Exit(1)
 	}
