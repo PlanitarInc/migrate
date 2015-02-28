@@ -17,36 +17,45 @@ import (
 )
 
 type Driver struct {
-	db *sql.DB
+	db     *sql.DB
+	ownsDB bool
 }
 
 const tableName = "schema_migrations"
 
-func (driver *Driver) getInstance(instance interface{}, url string) (*sql.DB, error) {
+func (driver *Driver) setDB(instance interface{}, url string) error {
 	if instance == nil {
 		urlWithoutScheme := strings.SplitN(url, "mysql://", 2)
 		if len(urlWithoutScheme) != 2 {
-			return nil, errors.New("invalid mysql:// scheme")
+			return errors.New("invalid mysql:// scheme")
 		}
-		return sql.Open("mysql", urlWithoutScheme[1])
+
+		db, err := sql.Open("mysql", urlWithoutScheme[1])
+		if err != nil {
+			return err
+		}
+
+		driver.db = db
+		driver.ownsDB = true
+		return nil
 	}
-	if db, ok := instance.(*sql.DB); !ok {
-		return nil, fmt.Errorf("Expected instance of *sql.DB, got %#v", instance)
-	} else {
-		return db, nil
+
+	db, ok := instance.(*sql.DB)
+	if !ok {
+		return fmt.Errorf("Expected instance of *sql.DB, got %#v", instance)
 	}
+
+	driver.db = db
+	return nil
 }
 
 func (driver *Driver) Initialize(instance interface{}, url string) error {
-	db, err := driver.getInstance(instance, url)
-	if err != nil {
+	if err := driver.setDB(instance, url); err != nil {
 		return err
 	}
-	if err := db.Ping(); err != nil {
+	if err := driver.db.Ping(); err != nil {
 		return err
 	}
-	driver.db = db
-
 	if err := driver.ensureVersionTableExists(); err != nil {
 		return err
 	}
@@ -54,6 +63,9 @@ func (driver *Driver) Initialize(instance interface{}, url string) error {
 }
 
 func (driver *Driver) Close() error {
+	if !driver.ownsDB {
+		return nil
+	}
 	if err := driver.db.Close(); err != nil {
 		return err
 	}
