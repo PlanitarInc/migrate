@@ -13,7 +13,8 @@ import (
 )
 
 type Driver struct {
-	session *gocql.Session
+	session     *gocql.Session
+	ownsSession bool
 }
 
 const (
@@ -44,8 +45,37 @@ const (
 // Example:
 // cassandra://localhost/SpaceOfKeys
 func (driver *Driver) Initialize(instance interface{}, rawurl string) error {
-	// TODO try to reuse open connection passed in instance
+	if err := driver.setSession(instance, rawurl); err != nil {
+		return err
+	}
+	if err := driver.ensureVersionTableExists(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (driver *Driver) Close() error {
+	if driver.ownsSession {
+		driver.session.Close()
+	}
+	return nil
+}
+
+func (driver *Driver) setSession(instance interface{}, rawurl string) error {
+	if instance != nil {
+		session, ok := instance.(*gocql.Session)
+		if !ok {
+			return fmt.Errorf("Expected instance of *sql.DB, got %#v", instance)
+		}
+
+		driver.session = session
+		return nil
+	}
+
 	u, err := url.Parse(rawurl)
+	if err != nil {
+		return err
+	}
 
 	cluster := gocql.NewCluster(u.Host)
 	cluster.Keyspace = u.Path[1:len(u.Path)]
@@ -68,20 +98,8 @@ func (driver *Driver) Initialize(instance interface{}, rawurl string) error {
 	}
 
 	driver.session, err = cluster.CreateSession()
-
-	if err != nil {
-		return err
-	}
-
-	if err := driver.ensureVersionTableExists(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (driver *Driver) Close() error {
-	driver.session.Close()
-	return nil
+	driver.ownsSession = true
+	return err
 }
 
 func (driver *Driver) ensureVersionTableExists() error {
