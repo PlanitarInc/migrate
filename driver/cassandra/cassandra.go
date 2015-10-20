@@ -158,7 +158,7 @@ func (driver *Driver) Migrate(id string, f file.File, pipe chan interface{}) {
 		return
 	}
 
-	for _, query := range strings.Split(string(f.Content), ";") {
+	for _, query := range strings.Split(string(f.Content), ";;") {
 		query = strings.TrimSpace(query)
 		if len(query) == 0 {
 			continue
