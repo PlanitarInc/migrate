@@ -8,7 +8,6 @@ import (
 
 	"github.com/PlanitarInc/migrate/driver/bash"
 	"github.com/PlanitarInc/migrate/driver/cassandra"
-	"github.com/PlanitarInc/migrate/driver/mysql"
 	"github.com/PlanitarInc/migrate/driver/postgres"
 	"github.com/PlanitarInc/migrate/file"
 )
@@ -51,14 +50,6 @@ func New(instance interface{}, url string) (Driver, error) {
 	case "postgres":
 		d := &postgres.Driver{}
 		verifyFilenameExtension("postgres", d)
-		if err := d.Initialize(instance, url); err != nil {
-			return nil, err
-		}
-		return d, nil
-
-	case "mysql":
-		d := &mysql.Driver{}
-		verifyFilenameExtension("mysql", d)
 		if err := d.Initialize(instance, url); err != nil {
 			return nil, err
 		}
