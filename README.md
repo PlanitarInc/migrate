@@ -24,7 +24,6 @@ __Features__
  * [PostgreSQL](https://github.com/PlanitarInc/migrate/tree/master/driver/postgres)
  * [Cassandra](https://github.com/PlanitarInc/migrate/tree/master/driver/cassandra)
  * SQLite ([planned](https://github.com/PlanitarInc/migrate/issues/2))
- * [MySQL](https://github.com/PlanitarInc/migrate/tree/master/driver/mysql) ([experimental](https://github.com/PlanitarInc/migrate/issues/1#issuecomment-58728186))
  * Bash (planned)
 
 Need another driver? Just implement the [Driver interface](http://godoc.org/github.com/PlanitarInc/migrate/driver#Driver) and open a PR.
